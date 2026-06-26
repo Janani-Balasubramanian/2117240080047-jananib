@@ -1,0 +1,195 @@
+Project Submission AI Analyzer
+Overview
+Build a Python service from scratch that analyzes a student's project submission (ZIP file) and
+produces an evaluation package for a mentor-led viva.
+Given only project metadata and a ZIP, the service should:
+1. Extract and analyze the codebase
+2. Suggest relevant skills from a provided catalog
+3. Generate interview questions per skill
+4. Return a structured evaluation report (JSON)
+Problem
+Universities assess experiential projects (internships, capstones, mini-apps). Mentors need help
+preparing viva questions that reflect what the student actually built — not generic textbook questions.
+Input: ZIP file + project metadata + skill catalog (JSON we provide)
+Output: ranked skills + skill-wise questions + evaluation report
+Required flow
+ZIP + metadata + skill catalog
+↓
+[1] Safe ZIP extraction → file tree, dependencies, code snippets
+↓
+[2] Suggest skills (only from catalog, with confidence + rationale)
+↓
+[3] Generate interview questions per suggested skill and summary
+↓
+[4] Return structured evaluation report (JSON)
+What to build
+API
+One endpoint:
+POST /analyze-submission
+Input (multipart form):
+Field Type Required
+project_title string yes
+project_description string no
+project_outcomes string yes
+zip_file file yes
+questions_per_skill int no (default: 2)
+Skill catalog (we provide a sample file, store inside App as json — you do not query any database):
+[
+{ "skill_id": "uuid-1", "skill_name": "Python" },
+{ "skill_id": "uuid-2", "skill_name": "FastAPI" },
+{ "skill_id": "uuid-3", "skill_name": "PostgreSQL" }
+]
+Rules:
+Only suggest skills that exist in the catalog
+Every suggestion must include confidence (0–1) and rationale
+Add skills in the catalog (if needed)
+Output (JSON):
+{
+"project_title": "...",
+"suggested_skills": [
+{
+"skill_id": "uuid-1",
+"skill_name": "Python",
+"confidence": 0.92,
+"rationale": "Python used in API and service layers"
+}
+],
+"evaluation_report": {
+"skills": [
+{
+"skill_name": "Python",
+"questions": [
+{
+"question_text": "...",
+"question_focus": "conceptual",
+"expected_key_points": ["...", "..."]
+},
+{
+"question_text": "...",
+"question_focus": "codebase_specific",
+"expected_key_points": ["...", "..."]
+}
+]
+}
+],
+"summary": {
+"overall_alignment": "partial",
+"alignment_score": 0.72,
+"narrative": "The submitted codebase largely supports the stated ou
+"outcome_evaluation": [
+{
+"stated_outcome": "Build a REST API for inventory management",
+"status": "met",
+"evidence": "api/routes/inventory.py defines GET/POST/PUT/DELET
+"gap": null
+},
+{
+"stated_outcome": "Implement user authentication and secure API
+"status": "partial",
+"evidence": "api/middleware/auth.py validates JWT tokens on pro
+"gap": "Admin-only routes are not consistently protected; no re
+},
+{
+"stated_outcome": "Deploy the application using Docker",
+"status": "partial",
+"evidence": "Dockerfile present at project root; exposes port 8
+"gap": "No docker-compose.yml, no documented env vars, and no e
+},
+summary requirements:
+Compare the ZIP evidence against each outcome listed in project_outcomes (treat as a list
+of stated goals — split on newlines or numbered bullets if needed).
+status per outcome: met | partial | not_met | not_verifiable
+evidence must cite real files, modules, or patterns from the ZIP — not generic claims.
+overall_alignment : strong | partial | weak
+alignment_score : 0–1 (optional but recommended)
+narrative : 2–4 sentences for the mentor — plain English, not bullet-only
+Example input project_outcomes for the sample above:
+1. Build a REST API for inventory management
+2. Implement user authentication and secure API access
+3. Deploy the application using Docker
+4. Apply database design and normalization principles
+{
+"stated_outcome": "Apply database design and normalization prin
+"status": "met",
+"evidence": "migrations/001_init.sql separates users, products,
+"gap": null
+}
+],
+"strengths": [
+"Clear separation between routes, models, and database layer",
+"Inventory CRUD aligns directly with the primary project goal",
+"Schema migrations suggest intentional database design"
+],
+"gaps": [
+"Deployment outcome is claimed but not fully evidenced in the rep
+"Authentication is present but incomplete for production-style ac
+"No automated tests to validate API behavior against outcomes"
+],
+},
+"metadata": {
+"files_analyzed": 12,
+"extraction_time_ms": 340,
+"model_tokens_used": 2100
+}
+},
+"processing_time_ms": 4200
+}
+Technical requirements
+Item Requirement
+Language Python 3.11+
+Framework FastAPI
+LLM Use own AI Key
+Data No database — skill catalog comes in the file you save
+Questions Per skill: at least 1 conceptual + 1 codebase_specific (must cite real file paths or
+symbols from the ZIP)
+Errors Clear HTTP responses for bad ZIP, empty project, invalid catalog, LLM failures
+Config .env.example for API keys — no secrets in submission
+What we provide
+Shared Git repository (access will be given to you)
+Sample skill catalog JSON
+Optional: 1–2 example ZIP submissions for testing
+Everything else — project structure, ZIP parsing, prompts, API, tests — you build from scratch.
+Deliverables
+1. Complete runnable project — install deps + one command to start the server
+2. README — setup, env vars, folder structure, how to run tests, one example API call, and demo
+video link
+3. Your own test ZIP — small project you zipped for demo (5–15 source files)
+4. 2+ unit tests (optional) — e.g. path-traversal ZIP rejected; output matches your Pydantic schema
+5. Short write-up (optional) (½ page) in README or NOTES.md
+Submission
+1. Git branch (required)
+Push your code to the shared repository we provide. Do not commit directly to main or master .
+Branch naming convention:
+<college-id>-<full-name-in-lowercase-with-hyphens>
+Rule Good Bad
+College ID first, then name 21cs0123-arun-kumar arun-kumar-21cs0123
+All lowercase 22it0456-priya-sharma 22IT0456-Priya-Sharma
+Hyphens between words 21ec0789-r-venkatesh 21ec0789_r_venkatesh
+No spaces or special characters 20cs1001-john-doe 20cs1001 john doe
+Steps:
+git clone <shared-repo-url>
+cd <repo-name>
+git checkout -b 21cs0123-arun-kumar
+# ... add your code ...
+git add .
+git commit -m "Add project submission analyzer"
+git push -u origin 21cs0123-arun-kumar
+Do not commit: API keys, .env files, or secrets. Use .env.example only.
+2. Working demo video (required)
+Record a 5–10 minute video showing the project working end to end.
+Must show:
+1. Starting the server locally
+2. One successful POST /analyze-submission call with a real ZIP and skill catalog
+3. The JSON response — suggested skills, questions, and summary (outcome evaluation)
+4. Brief walkthrough of your code structure and one design decision
+Video details:
+Item Requirement
+Format Share MP4 in Whatsapp Group or shareable link (Google Drive / OneDrive — view access for
+reviewers)
+Slideshows or code-only walkthroughs without a live demo will not be accepted.
+Sample test ZIP ideas
+Candidates create their own small project, zip it, and test against it:
+FastAPI CRUD app
+React + Express todo app
+Python data script with requirements.txt
+Avoid empty ZIPs or single-file homework.
